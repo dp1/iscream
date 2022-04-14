@@ -11,6 +11,10 @@
 
 #include "ir_remote.h"
 
+#include "net/emcute.h"
+
+#include "network.h"
+
 #ifdef IN_VSCODE
 // Just a hack to make autocompletion work
 #include "/home/dario/Desktop/uni/iot/RIOT/build/stm32/cmsis/l4/Include/stm32l475xx.h"
@@ -23,7 +27,6 @@ static inline DFSDM_Channel_TypeDef *ch(int id)
 {
     return (DFSDM_Channel_TypeDef*)(DFSDM1_Channel0_BASE + 0x20 * id);
 }
-
 
 static inline DFSDM_Filter_TypeDef *flt(int id)
 {
@@ -57,12 +60,12 @@ void isr_dfsdm1_flt0(void)
 
     if(rms_cnt == rms_lim)
     {
-        double rms = sqrt(rms_sum / rms_cnt);
-        int db = (int)(20.0 * log10(rms));
-        printf("%3d ", db);
+        // double rms = sqrt(rms_sum / rms_cnt);
+        // int db = (int)(20.0 * log10(rms));
+        // printf("%3d ", db);
 
-        for(int i = 30; i < db; i++) putchar('#');
-        putchar('\n');
+        // for(int i = 30; i < db; i++) putchar('#');
+        // putchar('\n');
 
         rms_sum = 0;
         rms_cnt = 0;
@@ -111,11 +114,31 @@ void audio_start(void) {
     flt(0)->FLTCR1 |= DFSDM_FLTCR1_RSWSTART; // start conversion
 }
 
+void on_pub(const emcute_topic_t *topic, void *data, size_t len) {
+    char *in = (char *)data;
+    printf("### got publication for topic '%s' [%i] ###\n",
+           topic->name, (int)topic->id);
+
+    for(size_t i = 0; i < len; i++) {
+        printf("%c", in[i]);
+    }
+    puts("");
+
+}
+
+void send(int val) {
+    printf("VALUE: %d\n",val);
+    char str[50];
+    sprintf(str,"{\"id\":\"%s\",\"pressed_key\":\"%d\"}",EMCUTE_ID,val);
+    mqtt_pub(MQTT_TOPIC_OUT,str,0);
+}
+
 int main(void) {
 
     ir_remote_init(&remote, GPIO_PIN(PORT_A, 4));
     audio_init();
     audio_start();
+    setup_mqtt(on_pub);
 
     for(;;)
     {
@@ -124,40 +147,6 @@ int main(void) {
             return -1;
         }
         printf("Packet addr=0x%X, cmd=0x%X\n", cmd.addr, cmd.cmd);
+        send(cmd.cmd);
     }
 }
-
-
-
-#if 0
-
-typedef struct
-{
-  __IO uint32_t FLTCR1;      /*!< DFSDM control register1,                          Address offset: 0x100 */
-  __IO uint32_t FLTCR2;      /*!< DFSDM control register2,                          Address offset: 0x104 */
-  __IO uint32_t FLTISR;      /*!< DFSDM interrupt and status register,              Address offset: 0x108 */
-  __IO uint32_t FLTICR;      /*!< DFSDM interrupt flag clear register,              Address offset: 0x10C */
-  __IO uint32_t FLTJCHGR;    /*!< DFSDM injected channel group selection register,  Address offset: 0x110 */
-  __IO uint32_t FLTFCR;      /*!< DFSDM filter control register,                    Address offset: 0x114 */
-  __IO uint32_t FLTJDATAR;   /*!< DFSDM data register for injected group,           Address offset: 0x118 */
-  __IO uint32_t FLTRDATAR;   /*!< DFSDM data register for regular group,            Address offset: 0x11C */
-  __IO uint32_t FLTAWHTR;    /*!< DFSDM analog watchdog high threshold register,    Address offset: 0x120 */
-  __IO uint32_t FLTAWLTR;    /*!< DFSDM analog watchdog low threshold register,     Address offset: 0x124 */
-  __IO uint32_t FLTAWSR;     /*!< DFSDM analog watchdog status register             Address offset: 0x128 */
-  __IO uint32_t FLTAWCFR;    /*!< DFSDM analog watchdog clear flag register         Address offset: 0x12C */
-  __IO uint32_t FLTEXMAX;    /*!< DFSDM extreme detector maximum register,          Address offset: 0x130 */
-  __IO uint32_t FLTEXMIN;    /*!< DFSDM extreme detector minimum register           Address offset: 0x134 */
-  __IO uint32_t FLTCNVTIMR;  /*!< DFSDM conversion timer,                           Address offset: 0x138 */
-} DFSDM_Filter_TypeDef;
-
-typedef struct
-{
-  __IO uint32_t CHCFGR1;     /*!< DFSDM channel configuration register1,            Address offset: 0x00 */
-  __IO uint32_t CHCFGR2;     /*!< DFSDM channel configuration register2,            Address offset: 0x04 */
-  __IO uint32_t CHAWSCDR;    /*!< DFSDM channel analog watchdog and
-                                  short circuit detector register,                  Address offset: 0x08 */
-  __IO uint32_t CHWDATAR;    /*!< DFSDM channel watchdog filter data register,      Address offset: 0x0C */
-  __IO uint32_t CHDATINR;    /*!< DFSDM channel data input register,                Address offset: 0x10 */
-} DFSDM_Channel_TypeDef;
-
-#endif
