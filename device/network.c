@@ -7,7 +7,7 @@
 #include "network.h"
 
 #define _IPV6_DEFAULT_PREFIX_LEN        (64U)
-#define EMCUTE_PRIO         (THREAD_PRIORITY_MAIN - 1)
+#define EMCUTE_PRIO         (THREAD_PRIORITY_MAIN - 2)
 #define NUMOFSUBS           (16U)
 #define TOPIC_MAXLEN        (64U)
 

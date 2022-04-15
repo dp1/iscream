@@ -7,6 +7,7 @@
 #include "periph_conf.h"
 #include "timex.h"
 #include "xtimer.h"
+#include "thread.h"
 #include "periph/gpio.h"
 #include "net/emcute.h"
 
@@ -42,9 +43,52 @@ void send(int val) {
 
 void audio_cb(double dB) {
     int db = (int)dB;
-    printf("%3d ", db);
+    printf("%3d\n", db);
     // for(int i = 30; i < db; i++) putchar('#');
     // putchar('\n');
+}
+
+enum {
+    IDLE = 0,
+    ACTIVE = 1,
+    TRIGGERED = 2
+} state = IDLE;
+
+#define IR_BUTTON_ON 0xA2
+#define IR_BUTTON_OFF 0x62
+#define IR_BUTTON_STOP 0xE2
+
+char ir_thread_stack[THREAD_STACKSIZE_MAIN];
+
+void* ir_remote_thread(void *arg) {
+    (void)arg;
+
+    for(;;) {
+        if(ir_remote_read(&remote, &cmd)) {
+            puts("error reading from remote");
+            continue;
+        }
+
+        switch(cmd.cmd) {
+            case IR_BUTTON_ON:
+                puts("Turning on");
+                state = ACTIVE;
+                break;
+            case IR_BUTTON_OFF:
+                puts("Turning off");
+                state = IDLE;
+                break;
+            case IR_BUTTON_STOP:
+                if(state == TRIGGERED) {
+                    puts("Stopping alarm");
+                    state = ACTIVE;
+                } else {
+                    puts("Stop command received, but alarm was't triggered - ignoring");
+                }
+                break;
+        }
+    }
+    return NULL;
 }
 
 int main(void) {
@@ -54,13 +98,5 @@ int main(void) {
     audio_start();
     setup_mqtt(on_pub);
 
-    for(;;)
-    {
-        if(ir_remote_read(&remote, &cmd)) {
-            puts("error");
-            return -1;
-        }
-        printf("Packet addr=0x%X, cmd=0x%X\n", cmd.addr, cmd.cmd);
-        send(cmd.cmd);
-    }
+    thread_create(ir_thread_stack, sizeof(ir_thread_stack), THREAD_PRIORITY_MAIN - 1, 0, ir_remote_thread, NULL, "ir_remote");
 }
