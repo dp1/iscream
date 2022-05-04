@@ -14,7 +14,7 @@ static inline DFSDM_Filter_TypeDef *flt(int id) {
     return (DFSDM_Filter_TypeDef*)(DFSDM1_Filter0_BASE + 0x100 * id);
 }
 
-void set_ckout_freq(uint32_t target_hz) {
+static void set_ckout_freq(uint32_t target_hz) {
     uint32_t bus_clock = periph_apb_clk(APB2);
     uint32_t div = bus_clock / target_hz - 1;
     div &= 0xFF; // 8 bit divisor
