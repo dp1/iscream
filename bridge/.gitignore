@@ -2,4 +2,6 @@
 *.pem
 *.crt
 *.zip
+*.sh
 conf.py
+aws-iot-device-sdk-python/

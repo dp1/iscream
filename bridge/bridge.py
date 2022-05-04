@@ -55,7 +55,10 @@ def on_message(client, userdata, msg):
     print("--------------\n\n")
     # client.publish("iscream_downlink", "This is a packet from the bridge")
 
-    aws_client.publish(msg.topic, msg.payload.decode(), 1)
+    try:
+        aws_client.publish(msg.topic, msg.payload.decode(), 1)
+    except Exception as e:
+        print(e)
 
 def aws_callback(client, userdata, msg):
     global paho_client
