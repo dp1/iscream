@@ -1,27 +1,94 @@
-from argparse import ArgumentParser
+import threading
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
+from AWSIoTPythonSDK.core.shadow.deviceShadow import deviceShadow
 import time, json
 import boto3
-from flask import Flask
+from flask import Flask, render_template, request
 
 import conf
 
 app = Flask(__name__)
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 
-def customShadowCallback_Get(payload, responseStatus, token):
-    if responseStatus == "timeout":
-        print("Shadow get request " + token + " time out!")
-    if responseStatus == "accepted":
-        payloadDict = json.loads(payload)
-        print("~~~~~~~~~~~~~~~~~~~~~~~")
-        print("Shadow get request with token: " + token + " accepted!")
-        # print("property: " + str(payloadDict["state"]["desired"]["property"]))
-        print(payloadDict)
-        print("~~~~~~~~~~~~~~~~~~~~~~~\n\n")
-    if responseStatus == "rejected":
-        print("Shadow get request " + token + " rejected!")
+current_state = {
+    "active": False,
+    "triggered": False
+}
+
+shadow: deviceShadow = None
+
+def shadow_getter(shadow):
+    """
+    Runs in background and periodically gets the reported shadow state
+    """
+
+    def shadow_callback(payload, responseStatus, token):
+        global current_state
+
+        if responseStatus == "timeout":
+            print("Shadow get request " + token + " time out!")
+        if responseStatus == "accepted":
+            payloadDict = json.loads(payload)
+            print("Shadow get request with token: " + token + " accepted!")
+            print(payloadDict)
+
+            if "state" not in payloadDict or "reported" not in payloadDict["state"]:
+                print("Incomplete, skipping")
+                return
+
+            for key in current_state.keys():
+                if key in payloadDict["state"]["reported"]:
+                    current_state[key] = payloadDict["state"]["reported"][key]
+                    print(f"current_state[\"{key}\"] = {current_state[key]}")
+
+        if responseStatus == "rejected":
+            print("Shadow get request " + token + " rejected!")
+
+    while True:
+        shadow.shadowGet(shadow_callback, 5)
+        time.sleep(10)
+
+@app.route('/')
+def index():
+    return render_template('home.html', current_state=current_state)
+
+@app.route('/state', methods=['GET', 'POST'])
+def state():
+    global current_state, shadow
+
+    if request.method == 'GET':
+        return json.dumps(current_state)
+    else:
+        enable = request.json['action'] == 'enable'
+
+        payload = {
+            "state": {
+                "desired": {
+                    "active": enable
+                }
+            }
+        }
+        if enable == False:
+            payload["state"]["desired"]["triggered"] = False
+
+        def shadow_update_callback(payload, responseStatus, token):
+
+            if responseStatus == "timeout":
+                print("Shadow update request " + token + " time out!")
+            if responseStatus == "accepted":
+                payloadDict = json.loads(payload)
+                print("Shadow update request with token: " + token + " accepted!")
+                print(payloadDict)
+            if responseStatus == "rejected":
+                print("Shadow update request " + token + " rejected!")
+
+        shadow.shadowUpdate(json.dumps(payload), shadow_update_callback, 5)
+
+        return "{}"
+
 
 def main():
+    global awsclient, shadow
 
     awsclient = AWSIoTMQTTShadowClient("webserver")
     awsclient.configureEndpoint(conf.host, 8883)
@@ -33,17 +100,14 @@ def main():
     awsclient.configureMQTTOperationTimeout(5)  # 5 sec
 
     awsclient.connect()
+    shadow = awsclient.createShadowHandlerWithName("iscream", True)
     print("Connected to AWS MQTT")
 
-    shadow = awsclient.createShadowHandlerWithName("iscream", True)
+    threading.Thread(target=shadow_getter, args=(shadow,)).start()
 
     # dynamodb = boto3.client("dynamodb")
     # dynamodb_client = boto3.client('dynamodb', region_name="us-east-1")
 
-    while True:
-        shadow.shadowGet(customShadowCallback_Get, 5)
-        time.sleep(10)
-
 if __name__ == '__main__':
     main()
-
+    app.run('0.0.0.0', 8000)

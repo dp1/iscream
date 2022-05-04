@@ -9,7 +9,8 @@ tmux new-session \; \
   split-window -h -p 50\; \
   send-keys 'python mock/mock_board.py' Enter \; \
   split-window -v -p 50 \; \
-  send-keys '#python webif/server.py' Enter\; \
+  send-keys 'cd webif' Enter\; \
+  send-keys 'python server.py' Enter\; \
   select-pane -t 0 \; \
   split-window -v -p 50\; \
   send-keys 'cd bridge' Enter\; \

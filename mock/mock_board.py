@@ -6,13 +6,37 @@ import paho.mqtt.client as mqtt
 from argparse import ArgumentParser
 import time, json, random
 
+current_state = {
+    "active": False,
+    "triggered": False
+}
+
 def on_connect(client: mqtt.Client, userdata, flags, rc):
     print(f"Connected to MQTT-S broker, rc={rc}")
     client.subscribe("$aws/things/iscream/test_down")
     client.subscribe("$aws/things/iscream/shadow/update/accepted")
+    client.subscribe("$aws/things/iscream/shadow/get/accepted")
 
 def on_message(client: mqtt.Client, userdata, msg):
+    global current_state
+
     print("received", msg.topic, msg.payload)
+
+    if msg.topic == "$aws/things/iscream/shadow/update/accepted" or msg.topic == "$aws/things/iscream/shadow/get/accepted":
+        data = json.loads(msg.payload)["state"]
+
+        if "delta" in data:
+            current_state["active"] = data["delta"]["active"]
+            current_state["triggered"] = False
+
+            resp = {
+                "state": {
+                    "reported": current_state
+                }
+            }
+            print(resp)
+            client.publish("$aws/things/iscream/shadow/update", json.dumps(resp), 1)
+
 
 def main():
 
@@ -28,6 +52,8 @@ def main():
     client.connect(args.host, args.port)
     client.loop_start()
 
+    client.publish("$aws/things/iscream/shadow/get", "", 1)
+
     while True:
 
         if random.choice([0,1]) == 0:
@@ -36,7 +62,7 @@ def main():
                 "max": 40.8
             }
 
-            client.publish("$aws/things/iscream/sound_level", json.dumps(msg), 1)
+            # client.publish("$aws/things/iscream/sound_level", json.dumps(msg), 1)
         else:
 
             active = random.choice([True,False])
@@ -46,14 +72,11 @@ def main():
 
             msg = {
                 "state": {
-                    "reported": {
-                        "active": active,
-                        "triggered": triggered,
-                    }
+                    "reported": current_state
                 }
             }
 
-            client.publish("$aws/things/iscream/shadow/update", json.dumps(msg), 1)
+            # client.publish("$aws/things/iscream/shadow/update", json.dumps(msg), 1)
 
         time.sleep(10)
 
