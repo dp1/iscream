@@ -2,4 +2,3 @@
 docs/
 **/bin/
 __pycache__/
-mosquitto.rsmb/

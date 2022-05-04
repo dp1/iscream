@@ -1,0 +1,3 @@
+[submodule "mosquitto.rsmb"]
+	path = mosquitto.rsmb
+	url = https://github.com/eclipse/mosquitto.rsmb.git
