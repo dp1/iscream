@@ -2,8 +2,11 @@ from argparse import ArgumentParser
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
 import time, json
 import boto3
+from flask import Flask
 
 import conf
+
+app = Flask(__name__)
 
 def customShadowCallback_Get(payload, responseStatus, token):
     if responseStatus == "timeout":
