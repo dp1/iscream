@@ -13,7 +13,7 @@ static void ir_remote_isr(void *arg)
     }
     else // falling edge
     {
-        uint32_t length = xtimer_now_usec() - ir->last_rising;
+        int length = xtimer_now_usec() - ir->last_rising;
 
         if(abs(length - IR_REMOTE_START_US) <= IR_REMOTE_EPS_US)
         {
