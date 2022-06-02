@@ -27,13 +27,9 @@ USE_DHCPV6 ?= 0
 IPV6_PREFIX ?= fe80:2::/64
 SERVER_ADDR = fec0:affe::1
 SERVER_PORT = 1885
-MQTT_TOPIC_OUT = iscream_uplink
-MQTT_TOPIC_IN = iscream_downlink
 
 CFLAGS += -DSERVER_ADDR='"$(SERVER_ADDR)"'
 CFLAGS += -DSERVER_PORT='$(SERVER_PORT)'
-CFLAGS += -DMQTT_TOPIC_OUT='"$(MQTT_TOPIC_OUT)"'
-CFLAGS += -DMQTT_TOPIC_IN='"$(MQTT_TOPIC_IN)"'
 
 # Comment this out to disable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the
