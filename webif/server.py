@@ -11,8 +11,8 @@ app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 current_state = {
-    "active": False,
-    "triggered": False
+    "active": 0,
+    "triggered": 0
 }
 
 shadow: deviceShadow = None
@@ -59,17 +59,16 @@ def state():
     if request.method == 'GET':
         return json.dumps(current_state)
     else:
-        enable = request.json['action'] == 'enable'
+        enable = 1 if (request.json['action'] == 'enable') else 0
 
         payload = {
             "state": {
                 "desired": {
-                    "active": enable
+                    "active": enable,
+                    "triggered": 0
                 }
             }
         }
-        if enable == False:
-            payload["state"]["desired"]["triggered"] = False
 
         def shadow_update_callback(payload, responseStatus, token):
 
