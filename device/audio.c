@@ -25,7 +25,7 @@ static void set_ckout_freq(uint32_t target_hz) {
 static audio_cb_t audio_cb;
 
 static int num_samples = 0;
-#define SAMPLES_PER_MEASURE 2500
+#define SAMPLES_PER_MEASURE 5000
 
 static double y = 0, y_old = 0;
 static double alpha = 0.001;

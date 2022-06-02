@@ -168,11 +168,24 @@ void update_status(void) {
 // Audio processing
 //========================================
 
+#define SOUND_TRIGGER_DB 60
+#define SOUND_TRIGGER_SAMPLES 3
+
+int trigger_ctr = 0;
+
 void audio_cb(double dB) {
-    int db = (int)dB;
-    printf("%3d\n", db);
-    // for(int i = 30; i < db; i++) putchar('#');
-    // putchar('\n');
+    printf("%3d\n", (int)dB);
+
+    if(device_state == ACTIVE && dB >= SOUND_TRIGGER_DB) {
+        ++trigger_ctr;
+
+        if(trigger_ctr >= SOUND_TRIGGER_SAMPLES) {
+            device_state = TRIGGERED;
+        }
+    }
+    else {
+        trigger_ctr = 0;
+    }
 }
 
 //========================================
