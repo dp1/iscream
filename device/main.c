@@ -34,13 +34,6 @@ void on_pub(const emcute_topic_t *topic, void *data, size_t len) {
 
 }
 
-void send(int val) {
-    printf("VALUE: %d\n",val);
-    char str[50];
-    sprintf(str,"{\"id\":\"%s\",\"pressed_key\":\"%d\"}",EMCUTE_ID,val);
-    mqtt_pub(MQTT_TOPIC_OUT,str,0);
-}
-
 void audio_cb(double dB) {
     int db = (int)dB;
     printf("%3d\n", db);
@@ -48,11 +41,24 @@ void audio_cb(double dB) {
     // putchar('\n');
 }
 
-enum {
+typedef enum {
     IDLE = 0,
     ACTIVE = 1,
     TRIGGERED = 2
-} state = IDLE;
+} state_t;
+
+state_t state = IDLE;
+
+// Report the current device state to the device shadow
+void report_state(void) {
+    bool active = state != IDLE;
+    bool triggered = state == TRIGGERED;
+
+    char state_buf[128];
+    sprintf(state_buf, "{\"state\": {\"reported\": {\"active\": %d, \"triggered\": %d}}}", active, triggered);
+
+    mqtt_pub("$aws/things/iscream/shadow/update", state_buf, 1);
+}
 
 #define IR_BUTTON_ON 0xA2
 #define IR_BUTTON_OFF 0x62
@@ -63,11 +69,16 @@ char ir_thread_stack[THREAD_STACKSIZE_MAIN];
 void* ir_remote_thread(void *arg) {
     (void)arg;
 
+    // Report the initial state to keep the shadow in sync after a reboot
+    report_state();
+
     for(;;) {
         if(ir_remote_read(&remote, &cmd)) {
             puts("error reading from remote");
             continue;
         }
+
+        state_t old_state = state;
 
         switch(cmd.cmd) {
             case IR_BUTTON_ON:
@@ -86,6 +97,11 @@ void* ir_remote_thread(void *arg) {
                     puts("Stop command received, but alarm was't triggered - ignoring");
                 }
                 break;
+        }
+
+        // Update device shadow on state change
+        if(old_state != state) {
+            report_state();
         }
     }
     return NULL;
