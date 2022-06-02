@@ -21,6 +21,7 @@ ir_remote_cmd_t cmd;
 gpio_t ir_pin = GPIO_PIN(PORT_A, 4);
 gpio_t ckout = GPIO_PIN(PORT_E, 9);
 gpio_t datin2 = GPIO_PIN(PORT_E, 7);
+gpio_t buzzer = GPIO_PIN(PORT_A, 15);
 
 typedef enum {
     IDLE = 0,
@@ -181,6 +182,8 @@ const char* mqtt_subs[] = {
 int main(void) {
     gpio_init(LED0_PIN, GPIO_OUT);
     gpio_init(LED1_PIN, GPIO_OUT);
+    gpio_init(buzzer, GPIO_OUT);
+    gpio_set(buzzer);
 
     ir_remote_init(&remote, ir_pin);
     audio_init(ckout, datin2, audio_cb);
@@ -196,19 +199,22 @@ int main(void) {
             old_state = device_state;
         }
 
-        // Update status LEDs
+        // Update status LEDs and buzzer
         switch(device_state) {
             case IDLE:
                 gpio_clear(LED0_PIN);
                 gpio_clear(LED1_PIN);
+                gpio_set(buzzer);
                 break;
             case ACTIVE:
                 gpio_set(LED0_PIN);
                 gpio_clear(LED1_PIN);
+                gpio_set(buzzer);
                 break;
             case TRIGGERED:
                 gpio_set(LED0_PIN);
                 gpio_set(LED1_PIN);
+                gpio_clear(buzzer); // The buzzer is active low
                 break;
         }
 
