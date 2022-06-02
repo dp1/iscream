@@ -7,8 +7,8 @@ from argparse import ArgumentParser
 import time, json, random
 
 current_state = {
-    "active": False,
-    "triggered": False
+    "active": 0,
+    "triggered": 0
 }
 
 def on_connect(client: mqtt.Client, userdata, flags, rc):
@@ -27,7 +27,7 @@ def on_message(client: mqtt.Client, userdata, msg):
 
         if "delta" in data:
             current_state["active"] = data["delta"]["active"]
-            current_state["triggered"] = False
+            current_state["triggered"] = 0
 
             resp = {
                 "state": {
@@ -65,10 +65,10 @@ def main():
             # client.publish("$aws/things/iscream/sound_level", json.dumps(msg), 1)
         else:
 
-            active = random.choice([True,False])
-            triggered = False
+            active = random.choice([1,0])
+            triggered = 0
             if active:
-                triggered = random.choice([True,False])
+                triggered = random.choice([1,0])
 
             msg = {
                 "state": {
