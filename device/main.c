@@ -23,6 +23,10 @@ gpio_t ckout = GPIO_PIN(PORT_E, 9);
 gpio_t datin2 = GPIO_PIN(PORT_E, 7);
 gpio_t buzzer = GPIO_PIN(PORT_A, 15);
 
+//=======================================
+// State management
+//=======================================
+
 typedef enum {
     IDLE = 0,
     ACTIVE = 1,
@@ -41,6 +45,10 @@ void report_state(void) {
 
     mqtt_pub("$aws/things/iscream/shadow/update", state_buf, 1);
 }
+
+//========================================
+// JSON parsing
+//========================================
 
 typedef struct {
     char *data;
@@ -104,6 +112,10 @@ jsondict_t json_get_child(jsondict_t *json, char *key) {
     return res;
 }
 
+//========================================
+// IoT core shadow
+//========================================
+
 void on_shadow_update(const emcute_topic_t *topic, void *data, size_t len) {
     char *in = (char *)data;
     printf("### got publication for topic '%s' [%i] ###\n",
@@ -127,6 +139,10 @@ void on_shadow_update(const emcute_topic_t *topic, void *data, size_t len) {
     printf("Received shadow delta, new state %d\n", device_state);
 }
 
+//========================================
+// Status LEDs and buzzer
+//========================================
+
 // Update status LEDs and buzzer
 void update_status(void) {
     switch(device_state) {
@@ -148,12 +164,20 @@ void update_status(void) {
     }
 }
 
+//========================================
+// Audio processing
+//========================================
+
 void audio_cb(double dB) {
     int db = (int)dB;
     printf("%3d\n", db);
     // for(int i = 30; i < db; i++) putchar('#');
     // putchar('\n');
 }
+
+//========================================
+// IR Remote handling
+//========================================
 
 #define IR_BUTTON_ON 0xA2
 #define IR_BUTTON_OFF 0x62
@@ -198,6 +222,10 @@ void* ir_remote_thread(void *arg) {
     }
     return NULL;
 }
+
+//========================================
+// Main logic
+//========================================
 
 const char* mqtt_subs[] = {
     "$aws/things/iscream/shadow/update/accepted",
