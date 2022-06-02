@@ -179,6 +179,9 @@ const char* mqtt_subs[] = {
 };
 
 int main(void) {
+    gpio_init(LED0_PIN, GPIO_OUT);
+    gpio_init(LED1_PIN, GPIO_OUT);
+
     ir_remote_init(&remote, ir_pin);
     audio_init(ckout, datin2, audio_cb);
     setup_mqtt(mqtt_subs, on_shadow_update);
@@ -192,6 +195,23 @@ int main(void) {
             report_state();
             old_state = device_state;
         }
+
+        // Update status LEDs
+        switch(device_state) {
+            case IDLE:
+                gpio_clear(LED0_PIN);
+                gpio_clear(LED1_PIN);
+                break;
+            case ACTIVE:
+                gpio_set(LED0_PIN);
+                gpio_clear(LED1_PIN);
+                break;
+            case TRIGGERED:
+                gpio_set(LED0_PIN);
+                gpio_set(LED1_PIN);
+                break;
+        }
+
         xtimer_usleep(100000);
     }
 }
