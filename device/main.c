@@ -127,6 +127,27 @@ void on_shadow_update(const emcute_topic_t *topic, void *data, size_t len) {
     printf("Received shadow delta, new state %d\n", device_state);
 }
 
+// Update status LEDs and buzzer
+void update_status(void) {
+    switch(device_state) {
+        case IDLE:
+            gpio_clear(LED0_PIN);
+            gpio_clear(LED1_PIN);
+            gpio_set(buzzer);
+            break;
+        case ACTIVE:
+            gpio_set(LED0_PIN);
+            gpio_clear(LED1_PIN);
+            gpio_set(buzzer);
+            break;
+        case TRIGGERED:
+            gpio_set(LED0_PIN);
+            gpio_set(LED1_PIN);
+            gpio_clear(buzzer); // The buzzer is active low
+            break;
+    }
+}
+
 void audio_cb(double dB) {
     int db = (int)dB;
     printf("%3d\n", db);
@@ -170,6 +191,10 @@ void* ir_remote_thread(void *arg) {
                 }
                 break;
         }
+
+        // If for some reason the main loop has to wait inside mqtt_pub,
+        // make sure that the alarm can still be operated with the remote
+        update_status();
     }
     return NULL;
 }
@@ -194,24 +219,7 @@ int main(void) {
 
     state_t old_state = device_state;
     while(1) {
-        // Update status LEDs and buzzer
-        switch(device_state) {
-            case IDLE:
-                gpio_clear(LED0_PIN);
-                gpio_clear(LED1_PIN);
-                gpio_set(buzzer);
-                break;
-            case ACTIVE:
-                gpio_set(LED0_PIN);
-                gpio_clear(LED1_PIN);
-                gpio_set(buzzer);
-                break;
-            case TRIGGERED:
-                gpio_set(LED0_PIN);
-                gpio_set(LED1_PIN);
-                gpio_clear(buzzer); // The buzzer is active low
-                break;
-        }
+        update_status();
 
         if(old_state != device_state) {
             report_state();
