@@ -73,9 +73,7 @@ static int netif_add(char *iface_name,char *addr_str) {
     return 0;
 }
 
-int setup_mqtt(on_pub_handler_t on_pub) {
-
-    memset(subscriptions, 0, sizeof(subscriptions));
+int setup_mqtt(const char **sub_topics, on_pub_handler_t on_pub) {
 
     // start the emcute thread
     thread_create(emcute_stack, sizeof(emcute_stack), EMCUTE_PRIO, 0, emcute_thread, NULL, "emcute");
@@ -104,17 +102,22 @@ int setup_mqtt(on_pub_handler_t on_pub) {
 
     printf("Successfully connected to gateway at [%s]:%i\n", SERVER_ADDR, (int)gw.port);
 
-    // setup subscription to topic
-    unsigned flags = EMCUTE_QOS_0;
-    subscriptions[0].cb = on_pub;
-    subscriptions[0].topic.name = MQTT_TOPIC_IN;
+    // setup subscriptions
+    memset(subscriptions, 0, sizeof(subscriptions));
+    for(size_t i = 0; sub_topics[i]; ++i) {
+        assert(i < NUMOFSUBS);
 
-    if(emcute_sub(&subscriptions[0], flags) != EMCUTE_OK) {
-        printf("error: unable to subscribe to %s\n", MQTT_TOPIC_IN);
-        return 1;
+        subscriptions[i].cb = on_pub;
+        subscriptions[i].topic.name = sub_topics[i];
+
+        if(emcute_sub(&subscriptions[i], EMCUTE_QOS_0) != EMCUTE_OK) {
+            printf("error: unable to subscribe to %s\n", sub_topics[i]);
+            return 1;
+        }
+
+        printf("Now subscribed to %s\n", sub_topics[i]);
     }
 
-    printf("Now subscribed to %s\n", MQTT_TOPIC_IN);
     return 0;
 }
 

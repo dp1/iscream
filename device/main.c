@@ -107,12 +107,18 @@ void* ir_remote_thread(void *arg) {
     return NULL;
 }
 
+const char* mqtt_subs[] = {
+    "$aws/things/iscream/shadow/update/accepted",
+    "$aws/things/iscream/shadow/get/accepted",
+    NULL
+};
+
 int main(void) {
 
     ir_remote_init(&remote, ir_pin);
     audio_init(ckout, datin2, audio_cb);
     audio_start();
-    setup_mqtt(on_pub);
+    setup_mqtt(mqtt_subs, on_pub);
 
     thread_create(ir_thread_stack, sizeof(ir_thread_stack), THREAD_PRIORITY_MAIN - 1, 0, ir_remote_thread, NULL, "ir_remote");
 }
