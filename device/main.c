@@ -194,11 +194,6 @@ int main(void) {
 
     state_t old_state = device_state;
     while(1) {
-        if(old_state != device_state) {
-            report_state();
-            old_state = device_state;
-        }
-
         // Update status LEDs and buzzer
         switch(device_state) {
             case IDLE:
@@ -216,6 +211,11 @@ int main(void) {
                 gpio_set(LED1_PIN);
                 gpio_clear(buzzer); // The buzzer is active low
                 break;
+        }
+
+        if(old_state != device_state) {
+            report_state();
+            old_state = device_state;
         }
 
         xtimer_usleep(100000);
