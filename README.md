@@ -9,7 +9,7 @@ Discovery Kit](https://www.st.com/en/evaluation-tools/b-l475e-iot01a.html), an e
 
 An [IR receiver module](https://www.sunfounder.com/products/infrared-receiver-module) and its associated remote are used for turning the alarm on and off and to stop the alarm once triggered. Additionally, a [buzzer module](https://www.sunfounder.com/products/active-buzzer-module), together with the 2 LEDs provided on the discovery board, are used to report the state of the system.
 
-![Hardware](img/hardware.jpg)
+![Hardware](img/hardware.png)
 
 # Software
 
