@@ -132,7 +132,6 @@ void on_shadow_update(const emcute_topic_t *topic, void *data, size_t len) {
     jsondict_t active = json_get_child(&delta, "active");
     if(!active.data) return;
 
-    // state_t old_state = device_state;
     if(active.data[0] == '0' || active.data[0] == 'f') device_state = IDLE;
     else device_state = ACTIVE;
 
@@ -249,7 +248,7 @@ int main(void) {
     gpio_init(LED0_PIN, GPIO_OUT);
     gpio_init(LED1_PIN, GPIO_OUT);
     gpio_init(buzzer, GPIO_OUT);
-    gpio_set(buzzer);
+    gpio_set(buzzer); // The buzzer is active low
 
     ir_remote_init(&remote, ir_pin);
     audio_init(ckout, datin2, audio_cb);
