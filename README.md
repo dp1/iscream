@@ -9,16 +9,18 @@ Discovery Kit](https://www.st.com/en/evaluation-tools/b-l475e-iot01a.html), an e
 
 An [IR receiver module](https://www.sunfounder.com/products/infrared-receiver-module) and its associated remote are used for turning the alarm on and off and to stop the alarm once triggered. Additionally, a [buzzer module](https://www.sunfounder.com/products/active-buzzer-module), together with the 2 LEDs provided on the discovery board, are used to report the state of the system.
 
+![Hardware](img/hardware.jpg)
+
 # Software
 
-The operating system that runs on the board is [RIOT OS](https://www.riot-os.org/). To support the chosen peripherals, some additional drivers were written:
+The operating system that runs on the board is [RIOT OS](https://www.riot-os.org/). To support the chosen peripherals, some additional drivers were written for the ones that had no previous support in RIOT:
 
 - Decoding of IR NEC packets from the remote
 - Support for the digital microphone via the DFSDM peripheral
 
 ## IR Remote interface
 
-> A version of the code has been merged upstream in RIOT. See [PR #17935](https://github.com/RIOT-OS/RIOT/pull/17935)
+> #### A version of the code has been merged upstream in RIOT. See [PR #17935](https://github.com/RIOT-OS/RIOT/pull/17935)
 
 The remote command emits packets using the NEC format, which are then demodulated and received by the MCU. More information on the protocol can be found [here](https://techdocs.altium.com/display/FPGA/NEC+Infrared+Transmission+Protocol).
 
