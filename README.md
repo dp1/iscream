@@ -20,7 +20,7 @@ The operating system that runs on the board is [RIOT OS](https://www.riot-os.org
 
 ## IR Remote interface
 
-> #### A version of the code has been merged upstream in RIOT. See [PR #17935](https://github.com/RIOT-OS/RIOT/pull/17935)
+> ### A version of the code has been merged upstream in RIOT. See [PR #17935](https://github.com/RIOT-OS/RIOT/pull/17935)
 
 The remote command emits packets using the NEC format, which are then demodulated and received by the MCU. More information on the protocol can be found [here](https://techdocs.altium.com/display/FPGA/NEC+Infrared+Transmission+Protocol).
 
@@ -48,6 +48,8 @@ The protocol also supports repeat codes, short packets that represent a button b
 |A NEC packet followed by repeat codes|
 
 ## Audio pipeline
+
+> ### A complete explanation is available in [this Hackster post](https://www.hackster.io/dario_petrillo/using-a-digital-microphone-on-stm32-riot-os-1a3f44)
 
 The digital microphone, when fed with the correct audio clock, produces a series of samples in PDM format. This signal is fed into the DFSDM (Digital filter for Sigma-Delta Modulators) peripheral in the MCU, which converts the signal to PCM samples, applies a filter and produces samples that the code can use.
 
