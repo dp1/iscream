@@ -55,8 +55,28 @@ In software, a single pole low pass filter is added and the resulting value is p
 
 # Network
 
-The alarm communicates via MQTT to AWS IoT core. The packets are sent via[Ethernet-over-serial](https://doc.riot-os.org/group__drivers__ethos.html), then through a transparent MQTT-S/MQTT bridge and finally over the internet to the AWS endpoint. On the user side, a Python/Flask server connects to AWS to retrieve the device shadow data and interact with it as needed.
+The alarm communicates via MQTT to AWS IoT core. The packets are sent via [Ethernet-over-serial](https://doc.riot-os.org/group__drivers__ethos.html), then through a transparent MQTT-SN/MQTT bridge and finally over the internet to the AWS endpoint. On the user side, a Python/Flask server connects to AWS to retrieve the device shadow data and interact with it as needed.
+
+|![Architecture](img/architecture.png)|
+|:--:|
+|Architecture of the project|
+
+There are two types of packets sent by the device over MQTT:
+
+- ### Device shadow updates
+  Sent whenever the device state changes, either by the user via the remote, or because the alarm was triggered. They contain a playload of the form `{"active": 0, "triggered": 0}`
+
+- ### Sound level reports
+  These periodic packets send aggregate data on the measured sound level. They contain data of the form `{"avg":XX,"max":YY}`, which is processed by a custom rule and stored in a DynamoDB table.
+
+Additionally, the device listens for shadow updates coming from the web interface, so that the alarm can be remotely controlled.
 
 # User interface
 
 The user interface is simple, and allows the user to see the current state of the alarm (idle, active, triggered) and to remotely turn the alarm on and off.
+
+# Running
+
+To run the application, `start.sh` is provided. It requires `tmux` to be installed, and the device to be connected via usb. When run, the script will start mosquitto, the MQTT transparent bridge, the EthOS serial connection and the webserver.
+
+An additional script, `start_mock.sh` was used to simplify development. It starts all the same programs as `start.sh`, but instead of using the physical board and EthOS, it starts a mock of the board so that tests on the protocol and interface can be done purely in software.
