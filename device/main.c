@@ -167,6 +167,19 @@ void update_status(void) {
 // Audio processing
 //========================================
 
+typedef struct {
+    double avg;
+    double max;
+} audio_report_t;
+
+audio_report_t cur_audio_report = {.avg = 0, .max = 0};
+int cur_report_samples = 0;
+uint32_t last_report_ts;
+
+isrpipe_t audio_isrpipe;
+uint8_t audio_isrpipe_buf[16 * sizeof(audio_report_t)];
+char audio_thread_stack[THREAD_STACKSIZE_MAIN];
+
 #define SOUND_TRIGGER_DB 60
 #define SOUND_TRIGGER_SAMPLES 3
 
@@ -185,6 +198,50 @@ void audio_cb(double dB) {
     else {
         trigger_ctr = 0;
     }
+
+    if(dB > cur_audio_report.max)
+        cur_audio_report.max = dB;
+    cur_audio_report.avg += dB;
+    ++cur_report_samples;
+
+    // Send cumulative report
+    if(xtimer_now_usec() - last_report_ts > 10 * US_PER_SEC) {
+        cur_audio_report.avg /= cur_report_samples;
+        isrpipe_write(&audio_isrpipe, (void*)&cur_audio_report, sizeof(cur_audio_report));
+
+        cur_audio_report.max = dB;
+        cur_audio_report.avg = dB;
+        cur_report_samples = 1;
+
+        last_report_ts = xtimer_now_usec();
+    }
+}
+
+void* audio_reader_thread(void* arg) {
+    (void)arg;
+    char buf[128];
+
+    while(1) {
+        audio_report_t report;
+        if(isrpipe_read(&audio_isrpipe, (void*)&report, sizeof(report)) != sizeof(report)) {
+            puts("audio: isrpipe_read failed");
+            return NULL;
+        }
+
+        sprintf(buf, "{\"avg\": %lf, \"max\": %lf}", report.avg, report.max);
+        mqtt_pub("$aws/things/iscream/sound_level", buf, 1);
+    }
+}
+
+void audio_reader_init(void) {
+    isrpipe_init(&audio_isrpipe, audio_isrpipe_buf, sizeof(audio_isrpipe_buf));
+    last_report_ts = xtimer_now_usec();
+
+    thread_create(
+        audio_thread_stack, sizeof(audio_thread_stack),
+        THREAD_PRIORITY_MAIN - 2, 0, audio_reader_thread,
+        NULL, "audio_reder"
+    );
 }
 
 //========================================
@@ -254,7 +311,9 @@ int main(void) {
     audio_init(ckout, datin2, audio_cb);
     setup_mqtt(mqtt_subs, on_shadow_update);
 
+    audio_reader_init();
     audio_start();
+
     thread_create(ir_thread_stack, sizeof(ir_thread_stack), THREAD_PRIORITY_MAIN - 1, 0, ir_remote_thread, NULL, "ir_remote");
 
     state_t old_state = device_state;

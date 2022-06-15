@@ -47,6 +47,7 @@ QUIET ?= 1
 USEMODULE += xtimer
 USEMODULE += isrpipe
 USEMODULE += periph_gpio_irq
+USEMODULE += printf_float
 
 include $(CURDIR)/Makefile.ethos.conf
 include $(RIOTBASE)/Makefile.include
