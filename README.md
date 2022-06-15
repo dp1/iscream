@@ -73,11 +73,40 @@ There are two types of packets sent by the device over MQTT:
 
 Additionally, the device listens for shadow updates coming from the web interface, so that the alarm can be remotely controlled.
 
+# Data processing
+
+AWS receives the sound level reports and stores them in a DynamoDB table for later retrieval. The following rule takes care of this step
+
+|![AWS Rule](img/aws_rule.png)|
+|:--:|
+|AWS IoT Core ingress rule|
+
+|![AWS Rule](img/aws_rule_action.png)|
+|:--:|
+|Rule action to write to DynamoDB|
+
 # User interface
 
 The user interface is simple, and allows the user to see the current state of the alarm (idle, active, triggered) and to remotely turn the alarm on and off.
 
-# Running
+# How to run
+
+## Setup
+
+You first need to add your AWS certificates in the `bridge/` folder, the following are needed:
+- `bridge/root-CA.crt`
+- `bridge/<name>.private.key`
+- `bridge/<name>.cert.pem`
+
+They can be obtained by generating a device package on AWS IoT core. Additionally, you should create a `bridge/conf.py` file with the following format:
+```py
+host = "<your-url>.amazonaws.com"
+rootca = "./root-CA.crt"
+privkey = "./iscream.private.key"
+cert = "./iscream.cert.pem"
+```
+
+## Startup scripts
 
 To run the application, `start.sh` is provided. It requires `tmux` to be installed, and the device to be connected via usb. When run, the script will start mosquitto, the MQTT transparent bridge, the EthOS serial connection and the webserver.
 
