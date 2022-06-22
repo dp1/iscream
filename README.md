@@ -75,6 +75,12 @@ Additionally, the device listens for shadow updates coming from the web interfac
 
 # Data processing
 
+## On-device processing
+
+The device aggregates the information on sound level and periodically sends comulative reports. This has the effect of reducing network load and forwarding only necessary information to the rest of the system via MQTT. Additionally, the trigger logic is running fully on the device itself, so that the network latency does not influence the capability of the device, and temporary network outages only influence status reporting and remote control capabilities.
+
+## Cloud based processing
+
 AWS receives the sound level reports and stores them in a DynamoDB table for later retrieval. The following rule takes care of this step
 
 |![AWS Rule](img/aws_rule.png)|
@@ -88,6 +94,10 @@ AWS receives the sound level reports and stores them in a DynamoDB table for lat
 # User interface
 
 The user interface is simple, and allows the user to see the current state of the alarm (idle, active, triggered) and to remotely turn the alarm on and off.
+
+# System latency
+
+As mentioned in `On-device processing`, the alarm logic and network are decoupled where possible, so that the system can respond to noise even when the network isn't responding quickly. The only consequence of a network delay is reflected in a delayed status report, which cannot be avoided, but the system will still trigger and respond to the remote control regardless of this.
 
 # How to run
 
@@ -104,6 +114,8 @@ host = "<your-url>.amazonaws.com"
 rootca = "./root-CA.crt"
 privkey = "./iscream.private.key"
 cert = "./iscream.cert.pem"
+aws_access_key_id = "..."
+aws_secret_access_key = "..."
 ```
 
 ## Startup scripts
