@@ -1,9 +1,10 @@
+from datetime import datetime
 import threading
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
 from AWSIoTPythonSDK.core.shadow.deviceShadow import deviceShadow
 import time, json
 import boto3
-from flask import Flask, render_template, request
+from flask import Flask, Response, render_template, request
 
 import conf
 
@@ -48,6 +49,46 @@ def shadow_getter(shadow):
         shadow.shadowGet(shadow_callback, 5)
         time.sleep(10)
 
+graph_data = ''
+
+def table_reader():
+    """
+    Runs in background and periodically gets the sound reports
+    """
+    global graph_data
+
+    dynamodb = boto3.resource(
+        "dynamodb",
+        aws_access_key_id = conf.aws_access_key_id,
+        aws_secret_access_key = conf.aws_secret_access_key,
+        region_name = 'us-east-1'
+    )
+    table = dynamodb.Table('iscream_sound')
+
+    while True:
+        response = table.scan()
+        data = response['Items']
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            data.extend(response['Items'])
+
+        result = 'a,m,ts\n'
+        start = datetime.now().timestamp() * 1000 - 3600 * 1000
+        for item in sorted(data, key=lambda x: int(x['sample_time'])):
+
+            a = float(item['avg, max']['avg'])
+            m = float(item['avg, max']['max'])
+            ts = int(item['sample_time'])
+
+            # Filter for the last hour
+            if ts < start: continue
+
+            result += f'{a},{m},{ts}\n'
+        graph_data = result
+
+        time.sleep(10)
+
+
 @app.route('/')
 def index():
     return render_template('home.html', current_state=current_state)
@@ -85,6 +126,10 @@ def state():
 
         return "{}"
 
+@app.route('/graph_data', methods=['GET'])
+def send_graph_data():
+    return Response(graph_data, mimetype='text/csv')
+
 
 def main():
     global awsclient, shadow
@@ -103,9 +148,7 @@ def main():
     print("Connected to AWS MQTT")
 
     threading.Thread(target=shadow_getter, args=(shadow,)).start()
-
-    # dynamodb = boto3.client("dynamodb")
-    # dynamodb_client = boto3.client('dynamodb', region_name="us-east-1")
+    threading.Thread(target=table_reader).start()
 
 if __name__ == '__main__':
     main()
