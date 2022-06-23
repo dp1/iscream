@@ -123,3 +123,7 @@ aws_secret_access_key = "..."
 To run the application, `start.sh` is provided. It requires `tmux` to be installed, and the device to be connected via usb. When run, the script will start mosquitto, the MQTT transparent bridge, the EthOS serial connection and the webserver.
 
 An additional script, `start_mock.sh` was used to simplify development. It starts all the same programs as `start.sh`, but instead of using the physical board and EthOS, it starts a mock of the board so that tests on the protocol and interface can be done purely in software.
+
+# Demo video
+
+A video presentation and demo of the project can be found [here](https://youtu.be/5A73RW1fMVQ)
